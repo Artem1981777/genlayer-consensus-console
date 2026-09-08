@@ -2,10 +2,10 @@
 
 Interactive multi-contract dApp on GenLayer Testnet Bradbury: a thin browser client that submits real inputs to three deployed Intelligent Contracts (content moderation, prediction market, multi-source price oracle) and reads their on-chain state. Every consensus-critical decision — moderation verdicts, market outcomes, oracle medians — is computed and stored on-chain by the contracts; the frontend never decides anything.
 
-**Live app:** <https://artem1981777.github.io/genlayer-dashboard-v2/>
-**Source:** <https://github.com/Artem1981777/genlayer-dashboard-v2>
+**Live app:** <https://artem1981777.github.io/genlayer-consensus-console/>
+**Source:** <https://github.com/Artem1981777/genlayer-consensus-console>
 
-**Status (v1.5.0):** 76/76 unit tests · `tsc --noEmit` clean · `next build` green · live smoke reads of all three deployed contracts. Steward-review evidence: [`docs/EVIDENCE.md`](docs/EVIDENCE.md) · [`docs/REVIEW-RESPONSE.md`](docs/REVIEW-RESPONSE.md).
+**Status (v2.0.0):** 91/91 unit tests · `tsc --noEmit` clean · `next build` green · live smoke reads of all three deployed contracts. Steward-review evidence: [`docs/EVIDENCE.md`](docs/EVIDENCE.md) · [`docs/REVIEW-RESPONSE.md`](docs/REVIEW-RESPONSE.md).
 
 ## Table of contents
 
@@ -34,8 +34,10 @@ needs *judgment*, not deterministic code:
 
 - **Content Moderator** — validators reason over a natural-language policy and produce an
   on-chain APPROVE / FLAG / REMOVE verdict with category, confidence and rationale.
-- **Prediction Market** — resolves YES / NO / UNRESOLVED from cited web sources, with
-  staking, a mandatory dispute window, settlement and payouts.
+- **Prediction Market (v2)** — resolves YES / NO / UNRESOLVED from **immutable,
+  binding-verified** web sources, with staking, a mandatory dispute window, settlement
+  and payouts. The lifecycle is **fully permissionless** and every market carries a hard
+  `final_deadline` exit, so funds can never stay locked.
 - **Multi-Source Oracle** — median-consensus BTC/USD from Coinbase, CoinGecko and Kraken
   with tolerance and max-spread guards.
 
@@ -95,13 +97,14 @@ prices are computed inside the Intelligent Contracts under validator consensus.
 | Contract | Address | Explorer | Source | Deploy tx |
 | --- | --- | --- | --- | --- |
 | Content Moderator | `0x235F51b11b9F96d6673df37553Ef58373c4324F9` | [explorer](https://explorer-bradbury.genlayer.com/address/0x235F51b11b9F96d6673df37553Ef58373c4324F9) | [`apps/content-moderator/contracts/moderator.py`](apps/content-moderator/contracts/moderator.py) | [tx](https://explorer-bradbury.genlayer.com/tx/0xa05d3619563ce7ca31f01b34f3f82f89e868c4a4131d5896513339ec6f001867) |
-| Prediction Market | `0x3d17bD6d87563cB172E7C634341fBc8A14574035` | [explorer](https://explorer-bradbury.genlayer.com/address/0x3d17bD6d87563cB172E7C634341fBc8A14574035) | [`apps/prediction-market/contracts/prediction_market.py`](apps/prediction-market/contracts/prediction_market.py) | [tx](https://explorer-bradbury.genlayer.com/tx/0xb7406f6a8788600e04d1a6bdc1200269f2665683c97b9d9e338450ca6a815063) |
+| Prediction Market **v2** (showcase, open) | `0x2dc09cDbb8319303eAc78E85D5d055BB53bdA6BE` | [explorer](https://explorer-bradbury.genlayer.com/address/0x2dc09cDbb8319303eAc78E85D5d055BB53bdA6BE) | [`apps/prediction-market/contracts/prediction_market.py`](apps/prediction-market/contracts/prediction_market.py) — parity-proven byte-for-byte (sha256, see [app README](apps/prediction-market/README.md)) | [tx](https://explorer-bradbury.genlayer.com/tx/0xc5fa3809b13077d4bf215a37575b98f83259682a460ca0fd0bd23188ffb25a64) |
+| Prediction Market v2 (full-lifecycle proof, settled) | `0x390CAd661cEf8e2bBAc9b6a1B8A152d9083F8ba0` | [explorer](https://explorer-bradbury.genlayer.com/address/0x390CAd661cEf8e2bBAc9b6a1B8A152d9083F8ba0) | same contract; history `config_freeze → first_stake → initial → dispute → resolve_dispute → settle → claim`, with resolve / resolve_dispute / settle executed by a **non-creator** account | — |
 | Multi-Source Oracle (v2) | `0x9bEcbdF8f3Cd6fABAeE5F737CE5B1B765ef9a1F5` | [explorer](https://explorer-bradbury.genlayer.com/address/0x9bEcbdF8f3Cd6fABAeE5F737CE5B1B765ef9a1F5) | [`apps/multi-source-oracle/contracts/oracle.py`](apps/multi-source-oracle/contracts/oracle.py) — parity-proven byte-for-byte (sha256 match, see [app README](apps/multi-source-oracle/README.md#deployment-status)) | [tx](https://explorer-bradbury.genlayer.com/tx/0x7d3a61d17b00b735fb5835c110a23efa41f7e7890d6a37d3fd81106ba674d974) |
 
 Additional addresses (history / test instances):
 
 - Content Moderator (earlier revisions): `0x2d8257E5C7343f40F7Da5380E0d26b599a6036DE`, `0x391Cd354F2D74058F5dCAA42D80ECF158A2043Cf`, `0xc87881c7223e1d47Bf13EBDC50ADFaA0d0EFC4dC`, `0xF83a360cBA484C09E34018D3FF2f3800d6470DC3`, `0x0747802565F083d1784ED3f8Ff973Bf0920A61ea`, `0xD7E2ef74a1ACAAF579E97b2843Cac02EefE15A2c`
-- Prediction Market (lifecycle test instance, deterministic no-LLM proofs): `0x8D0c1f6b433f12a937081f7f1FbBDC3Fd51B41B1`
+- Prediction Market v2 test instances: recovery-path market (auto-void + 1:1 refund) `0x757FcC7A1b1aA857A3517F9afB5C062b87f21C80`, deterministic gating market `0xc29eD2017078766a5C62e57e2B462108b699650e`; v1 (superseded): `0x3d17bD6d87563cB172E7C634341fBc8A14574035`
 - AI Escrow Arbiter (bonus demo, not part of the submission): `0x6f33FF874366aEd9B071505Ffa1057072b8FC37C`
 
 ## Features per contract
@@ -125,29 +128,48 @@ Purpose: decide whether user content complies with a natural-language community 
 Invariants: only the creator enforces/resolves; only the author appeals; appeals limited
 to 2; verdict must be one of APPROVE/FLAG/REMOVE; confidence clamped to 0..100.
 
-### Prediction Market — [`apps/prediction-market/contracts/prediction_market.py`](apps/prediction-market/contracts/prediction_market.py)
+### Prediction Market v2 — [`apps/prediction-market/contracts/prediction_market.py`](apps/prediction-market/contracts/prediction_market.py)
 
-Purpose: resolve a yes/no question from cited web sources with staking and disputes.
+Purpose: resolve a yes/no question from **immutable, binding-verified** web sources with
+staking, disputes, permissionless settlement and a hard deadline exit.
+
+Steward-review hardening (v2):
+
+1. **No creator authority in the lifecycle.** `resolve`, `resolve_dispute`, `settle`,
+   `void`, `finalize` have no sender checks — any account drives them when the phase
+   gates pass. Trading is bounded by `staking_deadline`; after `final_deadline`,
+   `finalize()` (permissionless) always finishes the market: it settles when a definite
+   outcome survived its dispute window, otherwise voids with 1:1 refunds. Funds can
+   never stay locked.
+2. **Sources immutable from birth, independent and semantically bound.** No
+   `add_source` exists; the constructor fixes the source set (≥ 2 sources from ≥ 2
+   different registrable domains, deterministic check) and hash-freezes the whole
+   config. Each source carries a **binding excerpt** — a verbatim quote anchoring it to
+   the question. During resolution every node re-fetches the source and deterministically
+   verifies the excerpt appears verbatim (whitespace-normalized) in the rendered page;
+   sources failing the check are excluded from evidence. The model never decides
+   admissibility; the deterministic check does, identically on every node.
 
 | Method | Type | Caller | Effect |
 | --- | --- | --- | --- |
-| `__init__(question, rules, source1..3, market_id, dispute_window_seconds)` | deploy | — | stores config + hashes; status `open` |
-| `stake(side)` | **write, payable** | anyone | records the tx value on the chosen side; first stake freezes sources + config |
-| `add_source(url)` | write | creator only | adds a source while open and unfrozen |
-| `resolve()` | write | creator only | comparative-consensus outcome from web sources; YES/NO opens a mandatory dispute window |
+| `__init__(question, rules, source1..3, binding1..3, market_id, dispute_window_seconds, staking_deadline, final_deadline)` | deploy | — | validates + freezes config at birth (≥2 sources, ≥2 domains, binding excerpts, future deadlines); status `open` |
+| `stake(side)` | **write, payable** | anyone | records the tx value on the chosen side, while `now < staking_deadline` |
+| `resolve()` | write | **anyone** | after `staking_deadline` with ≥1 staker; comparative-consensus over binding-verified evidence; YES/NO opens a mandatory dispute window; UNRESOLVED stays open (retryable) |
 | `dispute(reason)` | write | stakers only | contests the outcome while the window is open; max 2 rounds |
-| `resolve_dispute()` | write | creator only | re-resolves with the dispute note; opens a fresh dispute window |
-| `settle()` | write | creator only | after the window closes; pari-mutuel pools; auto-voids if the winning side is empty |
-| `void()` | write | creator only | voids an unresolved market; refunds open |
+| `resolve_dispute()` | write | **anyone** | re-resolves with the dispute note; records UPHELD/OVERTURNED; opens a fresh window |
+| `settle()` | write | **anyone** | after the window; pari-mutuel pools; auto-voids if the winning side is empty |
+| `finalize()` | write | **anyone** | after `final_deadline`: settle-or-void hard exit (`deadline_void` opens 1:1 refunds) |
+| `void()` | write | **anyone** | voids an unresolved market (never one with a definite YES/NO); refunds open |
 | `claim()` | write | stakers only | single-use pari-mutuel payout on a settled market |
 | `refund()` | write | stakers only | single-use 1:1 refund on a voided market |
-| `get_state()` | view | — | full market state incl. pools, positions, claims, history |
+| `get_state()` | view | — | full market state incl. pools, positions, claims, both deadlines, bindings, history |
 | `verify_question(q)` / `verify_rules(r)` | view | — | SHA-256 checks |
 
-Invariants: `stake` requires `value > 0` and exactly one `side` argument (YES/NO); the
-source set and config freeze at the first stake; settlement is impossible while the
-dispute window is open; claims/refunds are single-use (anti-double-spend); payouts use
-`emit_transfer(value=u256(...), on="finalized")`.
+Invariants: `stake` requires `value > 0` and exactly one `side` (YES/NO); settlement is
+impossible while the dispute window is open; claims/refunds are single-use
+(anti-double-spend); payouts use `emit_transfer(value=u256(...), on="finalized")`;
+chain time is read via `genlayer._internal.msg.message_raw["datetime"]` with pure
+string parsing (no datetime module) — identical on every node.
 
 ### Multi-Source Oracle — [`apps/multi-source-oracle/contracts/oracle.py`](apps/multi-source-oracle/contracts/oracle.py)
 
@@ -185,14 +207,19 @@ tolerance 100 bps and max spread 500 bps.
 - On UNDETERMINED: the transaction does not finalize and the case stays `pending` (or
   `appealed`); the UI shows the failure with the tx hash.
 
-### Prediction Market — `resolve()` / `resolve_dispute()`
+### Prediction Market v2 — `resolve()` / `resolve_dispute()`
 
-- Pattern: **comparative equivalence** (`gl.eq_principle.prompt_comparative`).
-- Leader: fetches each source via `gl.nondet.web.render(url, mode="text")`, builds an
-  evidence prompt, extracts `{outcome: YES|NO|UNRESOLVED}` via `gl.nondet.exec_prompt`.
+- Pattern: **comparative equivalence** (`gl.eq_principle.prompt_comparative`) over
+  **deterministically admissibilized evidence**.
+- Leader: fetches each source via `gl.nondet.web.render(url, mode="text")`, verifies the
+  source's **binding excerpt** verbatim (whitespace-normalized substring check — pure
+  string logic, no tolerance), includes only verified sources as ADMISSIBLE evidence and
+  marks the rest EXCLUDED, then extracts `{outcome: YES|NO|UNRESOLVED}` via
+  `gl.nondet.exec_prompt`.
 - Validator comparison: the final `outcome` must match exactly; wording, source text and
-  which sources loaded are ignored. The prompt instructs ignoring failed fetches so a
-  single dead source cannot force UNRESOLVED.
+  which sources loaded are ignored — but each node applies the SAME deterministic
+  binding check, so a source whose excerpt does not appear in the page is excluded from
+  evidence on every node alike. The model never decides admissibility.
 - On UNDETERMINED: state does not change; the market stays `open` (or `disputed`).
 
 ### Multi-Source Oracle — `update(key)`
@@ -252,8 +279,8 @@ The strict allowlist lives in `SUCCESS_RESULTS` / `classifyExecution`
 Requirements: Node ≥ 18, npm, a browser with an EIP-6963 wallet (MetaMask).
 
 ```bash
-git clone https://github.com/Artem1981777/genlayer-dashboard-v2.git
-cd genlayer-dashboard-v2
+git clone https://github.com/Artem1981777/genlayer-consensus-console.git
+cd genlayer-consensus-console
 npm ci
 npm run dev
 ```
@@ -274,9 +301,9 @@ genlayer network testnet-bradbury        # or: genlayer network set
 genlayer deploy --contract apps/content-moderator/contracts/moderator.py \
   --args '["<rules>", "<content>", "<item_id>", "<source>", "<author>"]'
 
-# Prediction Market
+# Prediction Market v2
 genlayer deploy --contract apps/prediction-market/contracts/prediction_market.py \
-  --args '["<question>", "<rules>", "<source1>", "<source2>", "<source3>", "<market_id>", <dispute_window_seconds>]'
+  --args '["<question>", "<rules>", "<source1..3>", "<binding1..3>", "<market_id>", <dispute_window_seconds>, <staking_deadline>, <final_deadline>]'
 
 # Multi-Source Oracle
 genlayer deploy --contract apps/multi-source-oracle/contracts/oracle.py
@@ -297,7 +324,7 @@ The live site is served from the `gh-pages` branch (GitHub Pages).
 ## Testing
 
 ```bash
-npm test                        # 76/76 unit tests (vitest, no mocks)
+npm test                        # 91/91 unit tests (vitest, no mocks)
 npx tsc --noEmit                # typecheck
 npm run build                   # production build
 node tests/smoke.onchain.mjs    # live get_state reads from all three deployed contracts
@@ -312,13 +339,27 @@ Unit coverage ([`src/lib/actions.test.ts`](src/lib/actions.test.ts),
 | `classifyExecution` | success (FINISHED, FINISHED_WITH_RETURN), failure (FINISHED_WITH_ERROR, NOT_VOTED, UNDETERMINED, LEADER_TIMEOUT), pending |
 | `parseStakeWei` | rejects empty, zero, negative, fractional, non-numeric; accepts positive integers |
 | `stake.validate` / `stake.value` | side must be YES/NO; amount must be a positive integer before the wallet opens |
-| Action visibility matrix | role (creator/author), phase (open/dispute_window/disputed/dispute_resolved/settled/voided), per-caller claim/dispute/settle/refund gating, dispute-window open/closed boundary, 2-round dispute limit, source freeze, void gating |
+| Action visibility matrix | phase (open/dispute_window/disputed/dispute_resolved/settled/voided), per-caller claim/dispute/settle/refund gating, dispute-window open/closed boundary, 2-round dispute limit, permissionless resolve/settle/resolve_dispute/void, staking/final deadline gates, finalize visibility, void gating |
 | Live reads | `get_state` from deployed Content Moderator and Prediction Market contracts |
 
-Deterministic on-chain payable/gating suite (no LLM, needs a funded key):
-`apps/prediction-market/test-payable.mjs` — 8 checks: zero-value stake reverts, payable
-stake recorded, claim-before-settle reverts, dispute-before-resolve reverts, void,
-refund 1:1, double-refund reverts, re-void reverts.
+On-chain test suites for the market contract (need a funded key):
+
+- Deterministic, no LLM: `apps/prediction-market/test-payable.mjs` — 20/20 PASS
+  (`test-payable-results.txt`), including `finalize()` executed by a **non-creator**
+  account → `deadline_void` → 1:1 refunds, late-stake reverts and creation-validation
+  rejections (single domain, missing binding).
+- Full AI lifecycle: `apps/prediction-market/test.mjs` — 19/19 consolidated
+  (`test-results.txt`): stake → **stranger** resolve (binding-verified YES) → mandatory
+  dispute window → dispute → **stranger** resolve_dispute → **stranger** settle → claim
+  1:1 → double-claim revert; recovery market auto-void (`winning_side_empty`) → refund;
+  gating reverts.
+- Offline consensus simulation: `apps/prediction-market/sim_market.py` — 54/54 checks
+  (permissionless flows, deadline exit, binding verification incl. tamper/divergence
+  rejection, domain independence, gating) with a deterministic mock of the `genlayer`
+  runtime driving the REAL contract source.
+- Deploy parity: `apps/prediction-market/verify.mjs` — sha256 proof that the deployed
+  code is byte-for-byte identical to `contracts/prediction_market.py`
+  (`parity-proof.txt`).
 
 ## Usage walkthrough
 
@@ -339,24 +380,26 @@ refund 1:1, double-refund reverts, re-void reverts.
 
 ### 2. Prediction market: stake → resolve → dispute → settle → claim
 
-1. Pick the Prediction Market project (`0x3d17…4035`).
+1. Pick the Prediction Market project (showcase `0x2dc0…A6BE`, open with live staking; or the settled lifecycle proof `0x390C…8ba0`).
 2. **Stake**: choose YES or NO and a whole positive wei amount; the UI rejects zero or
-   fractional amounts before the wallet opens. The stake is the transaction value —
-   `stake(side)` takes exactly one argument
-   ([valid stake tx](https://explorer-bradbury.genlayer.com/tx/0x90253b2970cd2d2ff0fd7b2451305b28af42590733969684d05e00f0e3311485),
-   [zero-value rejected](https://explorer-bradbury.genlayer.com/tx/0x397f21e174d5b59170c40108f4cc56ea842857c1b15cc21a39ee031d6af894df)).
-   The first stake freezes the source set and market config on-chain.
-3. The creator presses **Resolve** — validators fetch the cited sources and reach a
-   comparative-consensus outcome; a YES/NO outcome opens the mandatory dispute window
-   (live countdown in the UI).
-4. Any staker can **Dispute** with a reason while the window is open (max 2 rounds); the
-   creator then **Resolve dispute**, which opens a fresh window.
-5. After the window closes the creator presses **Settle**; if nobody backed the winning
-   side the market auto-voids and refunds open.
-6. Winners press **Claim** for a pari-mutuel payout; on a voided market stakers press
-   **Refund** for a 1:1 return
-   ([refund tx](https://explorer-bradbury.genlayer.com/tx/0x89a8c4a523512ad31c088ba8ca35e2d7c446d68e2615f8b3c5f6ca6d5e128adb),
-   [double refund rejected](https://explorer-bradbury.genlayer.com/tx/0xb14778bf16655213ad6fd6b8c497aca63d04bd6ab94875e0bb7473b6000193ef)).
+    fractional amounts before the wallet opens. The stake is the transaction value —
+    `stake(side)` takes exactly one argument; trading is bounded by the on-chain
+    `staking_deadline` (countdown in the UI). Sources and config were already
+    hash-frozen at creation.
+ 3. **Anyone** (not just the creator) presses **Resolve** once the staking deadline has
+    passed — every node re-fetches each source, verifies its binding excerpt verbatim
+    and only then admits it as evidence; validators reach a comparative-consensus
+    outcome, and a YES/NO outcome opens the mandatory dispute window (live countdown in
+    the UI). On the lifecycle proof market the resolve was executed by a non-creator
+    account and returned YES from binding-verified evidence.
+ 4. Any staker can **Dispute** with a reason while the window is open (max 2 rounds);
+    **anyone** then **Resolve dispute**, which opens a fresh window.
+ 5. After the window closes **anyone** presses **Settle**; if nobody backed the winning
+    side the market auto-voids and refunds open. After the `final_deadline` anyone can
+    always **Finalize** the market (settle-or-void) — the permissionless hard exit that
+    makes locked funds impossible.
+ 6. Winners press **Claim** for a pari-mutuel payout; on a voided market stakers press
+    **Refund** for a 1:1 return.
 
 ### 3. Oracle: update(key)
 
@@ -377,7 +420,7 @@ Verify independently:
 
 ```bash
 npm ci
-npm test                          # 76/76
+npm test                          # 91/91
 npx tsc --noEmit                  # clean
 npm run build                     # passes
 node tests/smoke.onchain.mjs      # live reads from all three contracts
@@ -390,7 +433,7 @@ import { createClient } from "genlayer-js"
 import { testnetBradbury } from "genlayer-js/chains"
 const client = createClient({ chain: testnetBradbury })
 const state = await client.readContract({
-  address: "0x3d17bD6d87563cB172E7C634341fBc8A14574035",
+  address: "0x2dc09cDbb8319303eAc78E85D5d055BB53bdA6BE",
   functionName: "get_state",
   args: [],
 })
@@ -404,7 +447,7 @@ evidence pack.
 ## Project structure
 
 ```
-genlayer-dashboard-v2/
+genlayer-consensus-console/
 ├── apps/
 │   ├── content-moderator/
 │   │   ├── contracts/moderator.py        # Content Moderator IC
@@ -470,8 +513,8 @@ See [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Links
 
-- This repository: <https://github.com/Artem1981777/genlayer-dashboard-v2>
-- Live app (GitHub Pages): <https://artem1981777.github.io/genlayer-dashboard-v2/>
+- This repository: <https://github.com/Artem1981777/genlayer-consensus-console>
+- Live app (GitHub Pages): <https://artem1981777.github.io/genlayer-consensus-console/>
 - GenLayer website: <https://www.genlayer.com/>
 - Docs: <https://docs.genlayer.com/>
 - Portal: <https://portal.genlayer.foundation/>

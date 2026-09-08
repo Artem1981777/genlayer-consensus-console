@@ -1,7 +1,7 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# See https://help.github.com/articles/ignoring-files/ for more information.
 
-# dependencies
-/node_modules
+# dependencies (any depth)
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -14,8 +14,8 @@
 /coverage
 
 # next.js
-/.next/
-/out/
+.next/
+out/
 
 # production
 /build
@@ -28,9 +28,9 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
+*.pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (NEVER commit keys)
 .env*
 
 # vercel
@@ -44,9 +44,26 @@ apps/prediction-market/fix-pm-deploy.mjs
 *.bak
 *.pre_v130
 *.pre_ev
-.env
 *.pre_addr
 
 # python bytecode
 __pycache__/
 *.pyc
+
+# local tooling & research dumps (not part of the project)
+/python-portable/
+/mingit/
+/glwheel/
+/genlayer-pkg/
+/get-pip.py
+/genlayer.whl
+/gl_*.txt
+/simple-index.html
+/_tmp_test.mjs
+/c
+/console.log('ERR'
+/{const
+/genlayer-multi-source-oracle/
+
+# editor state
+/.kilo/

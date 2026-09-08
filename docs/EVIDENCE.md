@@ -19,7 +19,9 @@ verifiable by hash on the explorer.
 | Contract | Address | Source (repo path) | Explorer |
 | --- | --- | --- | --- |
 | Content Moderator | `0x235F51b11b9F96d6673df37553Ef58373c4324F9` | `apps/content-moderator/contracts/moderator.py` | [explorer](https://explorer-bradbury.genlayer.com/address/0x235F51b11b9F96d6673df37553Ef58373c4324F9) |
-| Prediction Market | `0x3d17bD6d87563cB172E7C634341fBc8A14574035` | `apps/prediction-market/contracts/prediction_market.py` | [explorer](https://explorer-bradbury.genlayer.com/address/0x3d17bD6d87563cB172E7C634341fBc8A14574035) |
+| Prediction Market **v2** (showcase, open) | `0x2dc09cDbb8319303eAc78E85D5d055BB53bdA6BE` | `apps/prediction-market/contracts/prediction_market.py` | [explorer](https://explorer-bradbury.genlayer.com/address/0x2dc09cDbb8319303eAc78E85D5d055BB53bdA6BE) |
+| Prediction Market v2 (full-lifecycle proof, settled) | `0x390CAd661cEf8e2bBAc9b6a1B8A152d9083F8ba0` | same contract | [explorer](https://explorer-bradbury.genlayer.com/address/0x390CAd661cEf8e2bBAc9b6a1B8A152d9083F8ba0) |
+| Prediction Market v2 (recovery proof, auto-voided) | `0x757FcC7A1b1aB857A3517F9afB5C062b87f21C80` | same contract | [explorer](https://explorer-bradbury.genlayer.com/address/0x757FcC7A1b1aB857A3517F9afB5C062b87f21C80) |
 | Multi-Source Oracle (v2) | `0x9bEcbdF8f3Cd6fABAeE5F737CE5B1B765ef9a1F5` | `apps/multi-source-oracle/contracts/oracle.py` | [explorer](https://explorer-bradbury.genlayer.com/address/0x9bEcbdF8f3Cd6fABAeE5F737CE5B1B765ef9a1F5) |
 
 Deployment transactions:
@@ -27,11 +29,11 @@ Deployment transactions:
 | Contract | Deploy tx |
 | --- | --- |
 | Content Moderator | [0xa05d3619563ce7ca31f01b34f3f82f89e868c4a4131d5896513339ec6f001867](https://explorer-bradbury.genlayer.com/tx/0xa05d3619563ce7ca31f01b34f3f82f89e868c4a4131d5896513339ec6f001867) |
-| Prediction Market (production) | [0xb7406f6a8788600e04d1a6bdc1200269f2665683c97b9d9e338450ca6a815063](https://explorer-bradbury.genlayer.com/tx/0xb7406f6a8788600e04d1a6bdc1200269f2665683c97b9d9e338450ca6a815063) |
-| Prediction Market (lifecycle test instance) | `0x8D0c1f6b433f12a937081f7f1FbBDC3Fd51B41B1` |
+| Prediction Market v2 (showcase) — parity-proven byte-for-byte, sha256 `451fd471…cea27` | [0xc5fa3809b13077d4bf215a37575b98f83259682a460ca0fd0bd23188ffb25a64](https://explorer-bradbury.genlayer.com/tx/0xc5fa3809b13077d4bf215a37575b98f83259682a460ca0fd0bd23188ffb25a64) |
 | Multi-Source Oracle v2 (exact-value consensus, parity-proven) | [0x7d3a61d17b00b735fb5835c110a23efa41f7e7890d6a37d3fd81106ba674d974](https://explorer-bradbury.genlayer.com/tx/0x7d3a61d17b00b735fb5835c110a23efa41f7e7890d6a37d3fd81106ba674d974) |
 | Oracle `register_feed` (btc_usd, 3 sources, v2) | [0xb73b05d0fbf5d7eecafe8f6bf09efba1b7fb2ea9d18a812f86db16a9c40fc8c7](https://explorer-bradbury.genlayer.com/tx/0xb73b05d0fbf5d7eecafe8f6bf09efba1b7fb2ea9d18a812f86db16a9c40fc8c7) |
 | Oracle `update` (btc_usd, v2) | [0xa72ddb7d7784f64c697f0d59e1ca07c3451526cae18c5be801b107028c3fdf54](https://explorer-bradbury.genlayer.com/tx/0xa72ddb7d7784f64c697f0d59e1ca07c3451526cae18c5be801b107028c3fdf54) |
+| Prediction Market v1 (superseded by v2) | [0xb7406f6a8788600e04d1a6bdc1200269f2665683c97b9d9e338450ca6a815063](https://explorer-bradbury.genlayer.com/tx/0xb7406f6a8788600e04d1a6bdc1200269f2665683c97b9d9e338450ca6a815063) |
 | Multi-Source Oracle v1 (superseded) | [0x75446ed8583355ad8b6738d3e4e3d03296049fb7c3c1a05825d3e8979dc0d20c](https://explorer-bradbury.genlayer.com/tx/0x75446ed8583355ad8b6738d3e4e3d03296049fb7c3c1a05825d3e8979dc0d20c) |
 
 ---
@@ -48,22 +50,54 @@ Deployment transactions:
 | `resolve_appeal()` | `moderator.py` — `@gl.public.write def resolve_appeal` | `0x235F…24F9` | [0x14fa4e5b…7e4513c5](https://explorer-bradbury.genlayer.com/tx/0x14fa4e5b4bfdd1eb488c31b2894391d5f65d2459e806112133f51c047e4513c5) | UPHELD (consensus) |
 | `get_state()` (view) | `moderator.py` — `@gl.public.view def get_state` | `0x235F…24F9` | live read (see smoke test below) | reads OK |
 
-### Prediction Market (`prediction_market.py`)
+### Prediction Market v2 (`prediction_market.py`)
+
+> **Steward-review hardening (v2):** permissionless lifecycle (`resolve`,
+> `resolve_dispute`, `settle`, `void`, `finalize` — no creator checks) plus a hard
+> `final_deadline` exit, and sources that are immutable from birth, multi-domain and
+> semantically bound via verbatim binding excerpts re-verified deterministically on
+> every node. Details: [`docs/REVIEW-RESPONSE.md`](./REVIEW-RESPONSE.md).
+>
+> **Parity proof (v2):** the deployed code at `0x2dc0…A6BE` was verified
+> byte-for-byte against the repo source by `apps/prediction-market/verify.mjs`
+> (26,499 bytes, sha256 `451fd471…cea27` on both sides,
+> `apps/prediction-market/parity-proof.txt`).
+>
+> **Non-creator proof account:** `0x185810D655D9bf80641741343a59C737e356F805` —
+> funded with a plain EVM transfer (chain 4221); every permissionless action below
+> marked **[stranger]** was submitted by this account, which is not any market's
+> creator. Its transactions are visible on each market's explorer page.
 
 | Action | Source location | Deployed at | Proof tx | Result |
 | --- | --- | --- | --- | --- |
-| `stake(side)` — payable, single arg, positive value | `prediction_market.py` — `@gl.public.write.payable def stake` | `0x8D0c…41B1` (test instance) | [0x90253b29…3311485](https://explorer-bradbury.genlayer.com/tx/0x90253b2970cd2d2ff0fd7b2451305b28af42590733969684d05e00f0e3311485) | FINISHED_WITH_RETURN, stake recorded |
-| `stake` — zero value rejected | same | `0x8D0c…41B1` | [0x397f21e1…af894df](https://explorer-bradbury.genlayer.com/tx/0x397f21e174d5b59170c40108f4cc56ea842857c1b15cc21a39ee031d6af894df) | FINISHED_WITH_ERROR (expected reject) |
-| `resolve()` | `prediction_market.py` — `@gl.public.write def resolve` | `0x3d17…4035` (production) | exercised via lifecycle scripts (`apps/prediction-market/lifecycle.mjs`, `test.mjs`) | YES/NO/UNRESOLVED via comparative consensus |
-| `dispute(reason)` | `prediction_market.py` — `@gl.public.write def dispute` | `0x8D0c…41B1` | [0x2080382c…2ab94b5f4](https://explorer-bradbury.genlayer.com/tx/0x2080382c3c2952842022174fd3a8913e18a7ae43749c89eff847bef2ab94b5f4) (gated reject before resolve) | reverted (expected) |
-| `resolve_dispute()` | `prediction_market.py` — `@gl.public.write def resolve_dispute` | `0x3d17…4035` | exercised via lifecycle scripts | OVERTURNED/UPHELD via comparative consensus |
-| `settle()` | `prediction_market.py` — `@gl.public.write def settle` | `0x3d17…4035` | exercised via lifecycle scripts | settled / auto-void on empty winning side |
-| `claim()` | `prediction_market.py` — `@gl.public.write def claim` | `0x8D0c…41B1` | [0x3a77877e…7f52ff6](https://explorer-bradbury.genlayer.com/tx/0x3a77877ef6fb216b1f75ca6e2ec87d3ddb7330f2e4eca82a254f58a967f52ff6) (gated reject before settle) | reverted (expected) |
-| `void()` | `prediction_market.py` — `@gl.public.write def void` | `0x8D0c…41B1` | [0x34d63ce2…b1e7b22](https://explorer-bradbury.genlayer.com/tx/0x34d63ce2d94767500458c2b8d66b2eee3df12e05a2a1863cbdcfb2b49b1e7b22) | FINISHED_WITH_RETURN, voided |
-| `refund()` | `prediction_market.py` — `@gl.public.write def refund` | `0x8D0c…41B1` | [0x89a8c4a5…d5e128adb](https://explorer-bradbury.genlayer.com/tx/0x89a8c4a523512ad31c088ba8ca35e2d7c446d68e2615f8b3c5f6ca6d5e128adb) | FINISHED_WITH_RETURN, refund 1:1 |
-| `refund()` — double refund rejected | same | `0x8D0c…41B1` | [0xb14778bf…600193ef](https://explorer-bradbury.genlayer.com/tx/0xb14778bf16655213ad6fd6b8c497aca63d04bd6ab94875e0bb7473b6000193ef) | reverted (expected) |
-| `void()` — re-void rejected | same | `0x8D0c…41B1` | [0xf32b0042…68774d9](https://explorer-bradbury.genlayer.com/tx/0xf32b0042e531bf49c7642a40fdb1b3bc5f807c7bf2414fe766c5d4eaa68774d9) | reverted (expected) |
-| `get_state()` (view) | `prediction_market.py` — `@gl.public.view def get_state` | `0x3d17…4035` | live read (smoke test) | reads OK |
+| constructor — sources frozen at birth, ≥2 domains, binding excerpts, future deadlines | `prediction_market.py` — `__init__` | `0x2dc0…A6BE` | deploy tx above | FINISHED_WITH_RETURN; `config_freeze` history event, `frozen_config_hash` set |
+| constructor — single-domain sources rejected | same | validation market | [0x? — see `test-payable-results.txt` V1] | FINISHED_WITH_ERROR (expected reject) |
+| constructor — missing binding excerpt rejected | same | validation market | [see `test-payable-results.txt` V2] | FINISHED_WITH_ERROR (expected reject) |
+| `stake(side)` — payable, positive value, inside window | `prediction_market.py` — `@gl.public.write.payable def stake` | `0x390C…8ba0` (lifecycle market) | [market tx history](https://explorer-bradbury.genlayer.com/address/0x390CAd661cEf8e2bBAc9b6a1B8A152d9083F8ba0) | FINISHED_WITH_RETURN, position + `staking_started` |
+| `stake` — zero value rejected | same | `0x5802…09F3` (market A) | [0x8cd315bd…26b6d836](https://explorer-bradbury.genlayer.com/tx/0x8cd315bd696942a525498d65a5716c3d9dd6c3d70f172a579ce29eee26b6d836) | FINISHED_WITH_ERROR (expected reject) |
+| `stake` — after `staking_deadline` rejected | same | market C | [0x5a099cc9…3eddff](https://explorer-bradbury.genlayer.com/tx/0x5a099cc9d72e99ac41b2c09257d27fcb12671023e224c261138aba10a03eddff) | FINISHED_WITH_ERROR (expected reject) |
+| `resolve()` **[stranger]** — permissionless, after staking deadline, binding-verified evidence | `prediction_market.py` — `@gl.public.write def resolve` | `0x390C…8ba0` | [market tx history](https://explorer-bradbury.genlayer.com/address/0x390CAd661cEf8e2bBAc9b6a1B8A152d9083F8ba0) | FINISHED_WITH_RETURN, outcome YES → `dispute_window`, window armed |
+| `resolve()` — before staking deadline rejected | same | `0x5802…09F3` | [0x469a9ecd…99694f6](https://explorer-bradbury.genlayer.com/tx/0x469a9ecd96054cf83d5cf2a33b91dbe9621c6a3c247f31b96adbb64e999694f6) | FINISHED_WITH_ERROR (expected reject) |
+| `resolve()` — with no stakers rejected | same | `0xc29e…650e` (market G) | [0xf2de64dc…e2942b7d](https://explorer-bradbury.genlayer.com/tx/0xf2de64dc9bfa1de6191eb8b8ca123738408cc9f041932d2407ad9ae3e2942b7d) | FINISHED_WITH_ERROR (expected reject) |
+| `dispute(reason)` — staker only, inside window | `prediction_market.py` — `@gl.public.write def dispute` | `0x390C…8ba0` | market tx history | disputed; settle blocked while open |
+| `dispute` — before resolve rejected | same | `0xc29e…650e` | [0x3334f92e…eca9035](https://explorer-bradbury.genlayer.com/tx/0x3334f92e46aa4ee9a8262df6ca05a4c293c86cee95addeb07e7d44aeca9035) | FINISHED_WITH_ERROR (expected reject) |
+| `settle()` — during dispute window rejected | `prediction_market.py` — `@gl.public.write def settle` | `0x390C…8ba0` | [0xbd6ea4bf…bc374009](https://explorer-bradbury.genlayer.com/tx/0xbd6ea4bf7f21189bb8c6db9e46c00d55ae03dba9e6e667d8af1e1109bc374009) | FINISHED_WITH_ERROR (expected reject) |
+| `resolve_dispute()` **[stranger]** | `prediction_market.py` — `@gl.public.write def resolve_dispute` | `0x390C…8ba0` | market tx history | `dispute_resolved`, UPHELD/OVERTURNED recorded, fresh window |
+| `settle()` **[stranger]** — after window | `prediction_market.py` — `@gl.public.write def settle` | `0x390C…8ba0` | market tx history | `settled`, winning side YES |
+| `settle()` **[stranger]** — empty winning side → auto-void | same | `0x757F…1C80` (recovery market) | [0x2f80b474…207c8a](https://explorer-bradbury.genlayer.com/tx/0x2f80b47424e381fcd1db255f3056a75b2635e8d641803cc5d5c3b5f847207c8a) | `voided / winning_side_empty`, refunds open |
+| `finalize()` **[stranger]** — permissionless hard exit after `final_deadline` | `prediction_market.py` — `@gl.public.write def finalize` | market C | [see `test-payable-results.txt` C3] | `voided / deadline_void` by a NON-creator account |
+| `finalize()` — before final deadline rejected | same | `0x5802…09F3` | [0xc4470b9f…003314f](https://explorer-bradbury.genlayer.com/tx/0xc4470b9f909b775bca845e0095be03cd2a6b4579fd67fe113a600e9c1003314f) | FINISHED_WITH_ERROR (expected reject) |
+| `claim()` — winner payout 1:1 (single staker) | `prediction_market.py` — `@gl.public.write def claim` | `0x390C…8ba0` | market tx history | claim recorded, payout = stake |
+| `claim()` — double claim rejected | same | `0x390C…8ba0` | [0x34e65cc0…6b44eeb](https://explorer-bradbury.genlayer.com/tx/0x34e65cc08b9afd4b95e0e3c94d93d84bb70fe24fb22918e7c3a7f4e826b44eeb) | FINISHED_WITH_ERROR (expected reject) |
+| `claim()` — before settle rejected | same | `0xc29e…650e` | [0x235d3339…4210f5](https://explorer-bradbury.genlayer.com/tx/0x235d333978ee64393987569ea79ed31cf89590a257b01f247a239fe8004210f5) | FINISHED_WITH_ERROR (expected reject) |
+| `refund()` — 1:1 after deadline_void / auto-void | `prediction_market.py` — `@gl.public.write def refund` | `0x757F…1C80` | [0x4532c015…5db32125](https://explorer-bradbury.genlayer.com/tx/0x4532c015374dd5bd7c43f7be75de3eb1121edca3155a44258151b26f5db32125) | FINISHED_WITH_RETURN, refund = stake |
+| `refund()` — double refund rejected | same | market C | [0x9e360c59…f6b5635](https://explorer-bradbury.genlayer.com/tx/0x9e360c599e0bf734a721789f495307c0460480e05b4997407ed98b1b4f6b5635) | FINISHED_WITH_ERROR (expected reject) |
+| `get_state()` (view) | `prediction_market.py` — `@gl.public.view def get_state` | `0x2dc0…A6BE` | live read (smoke test) | reads OK |
+
+Test-result artifacts (committed): `apps/prediction-market/test-payable-results.txt`
+(deterministic suite, 20/20), `apps/prediction-market/test-results.txt` (AI lifecycle,
+19/19 consolidated), `apps/prediction-market/sim_market.py` (offline simulation, 54/54),
+`apps/prediction-market/parity-proof.txt` (deploy parity).
 
 ### Multi-Source Oracle (`oracle.py`)
 
@@ -111,7 +145,7 @@ On-chain proof that the gate matches reality:
 
 ```bash
 npm ci
-npm test                 # 76/76 unit tests (no mocks)
+npm test                 # 91/91 unit tests (no mocks)
 npm run build            # production build
 node tests/smoke.onchain.mjs   # live get_state reads from all three deployed contracts
 ```
@@ -123,7 +157,7 @@ import { createClient } from "genlayer-js"
 import { testnetBradbury } from "genlayer-js/chains"
 const client = createClient({ chain: testnetBradbury })
 const state = await client.readContract({
-  address: "0x3d17bD6d87563cB172E7C634341fBc8A14574035",
+  address: "0x2dc09cDbb8319303eAc78E85D5d055BB53bdA6BE",
   functionName: "get_state",
   args: [],
 })

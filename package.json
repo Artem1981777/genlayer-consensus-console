@@ -1,8 +1,8 @@
 {
-  "name": "genlayer-dashboard-v2",
+  "name": "genlayer-consensus-console",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://artem1981777.github.io/genlayer-dashboard-v2/",
+  "homepage": "https://artem1981777.github.io/genlayer-consensus-console/",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
