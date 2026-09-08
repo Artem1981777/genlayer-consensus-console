@@ -1,0 +1,48 @@
+PASS T1 stake YES accepted
+PASS T2 permissionless resolve [by STRANGER] accepted
+PASS T2 resolved YES with verified bindings -> dispute_window
+resolve outcome: YES status: dispute_window
+PASS T2 mandatory dispute window armed
+PASS T3 settle during dispute window reverts
+PASS T4 staker dispute accepted -> disputed
+PASS T5 permissionless resolve_dispute [by STRANGER] accepted -> dispute_resolved
+dispute outcome: UPHELD
+PASS T6 permissionless settle [by STRANGER] accepted -> settled YES
+PASS T7 winner claim accepted
+PASS T7 payout equals full pool (single staker)
+PASS T8 double claim reverts
+PASS T9 stake NO only (YES side stays empty)
+FAIL T10 resolve -> YES (winning side empty)
+FAIL T11 settle -> auto-void (winning_side_empty)
+FAIL T12 refund 1:1 after auto-void
+PASS T13 zero-value stake reverts
+PASS T14 claim before settle reverts
+PASS T15 dispute before resolve reverts
+FAIL T16 resolve with no stakers reverts
+
+PASS: 15 FAIL: 4
+lifecycle market: 0x390CAd661cEf8e2bBAc9b6a1B8A152d9083F8ba0
+recovery market: 0x757FcC7A1b1aB857A3517F9afB5C062b87f21C80
+gating market: 0xc29eD2017078766a5C62e57e2B462108b699650e
+run at: 2026-09-08T03:00:32.936Z
+FAIL T10 resolve -> YES (winning side empty) [retried]
+R resume: PASS 0 FAIL 1 at 2026-09-08T03:12:38.035Z
+FAIL T10 resolve -> YES (winning side empty) [retried]
+PASS T11 settle -> auto-void (winning_side_empty)
+PASS T12 refund 1:1 after auto-void
+R resume: PASS 2 FAIL 1 at 2026-09-08T03:29:13.979Z
+
+NOTE (R market): the first resolve attempt hit a transient leader timeout;
+the retried resolve committed (the tx result name lagged the state);
+settle -> auto_void (winning_side_empty) -> refund 1:1 all succeeded.
+
+FINAL ON-CHAIN STATES (verified via get_state):
+L 0x390CAd661cEf8e2bBAc9b6a1B8A152d9083F8ba0: settled, outcome YES, winning_side YES,
+   claim paid 1:1; history: config_freeze -> first_stake -> initial -> dispute ->
+   resolve_dispute -> settle -> claim. resolve/resolve_dispute/settle were called
+   by the STRANGER account 0x185810D655D9bf80641741343a59C737e356F805.
+R 0x757FcC7A1b1aB857A3517F9afB5C062b87f21C80: voided, void_reason winning_side_empty,
+   refund 1:1 recorded; history: config_freeze -> first_stake -> initial -> auto_void -> refund.
+G 0xc29eD2017078766a5C62e57e2B462108b699650e: open, zero pools (gating reverts verified).
+
+CONSOLIDATED: lifecycle 12/12 + recovery 3/3 (after retry) + gating 4/4 = 19/19 on-chain.

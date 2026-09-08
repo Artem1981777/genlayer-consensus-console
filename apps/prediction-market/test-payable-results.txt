@@ -1,0 +1,26 @@
+PASS A1 deploy clean
+PASS A1 sources frozen AT BIRTH (before any stake)
+PASS A1 two sources stored
+PASS A1 config hash present
+PASS A1 deadlines stored
+PASS A2 zero-value stake reverts
+PASS A3 stake within window accepted
+PASS A3 position recorded + staking started
+PASS A4 resolve before staking deadline reverts
+PASS A5 finalize before final deadline reverts
+PASS C1 deploy clean
+PASS C1 stake lands inside the window
+PASS C2 stake after staking deadline reverts
+PASS C3 finalize by non-creator account accepted
+PASS C3 market voided with deadline_void
+PASS C4 refund 1:1 after deadline exit
+PASS C4 refund recorded with full stake
+PASS C5 double refund reverts
+PASS V1 single-domain sources rejected at creation
+PASS V2 missing binding excerpt rejected at creation
+
+PASS: 20 FAIL: 0
+market A: 0x2d2FA2b6c13a52292409F994bf040Ac0835daC47
+market C: 0x9777B8943D0B3D2e70de1f905D0EaeC3D91eFc2a
+stranger finalize caller: 0x185810D655D9bf80641741343a59C737e356F805
+run at: 2026-09-08T02:02:27.083Z

@@ -1,0 +1,5 @@
+deploy tx: 0xc5fa3809b13077d4bf215a37575b98f83259682a460ca0fd0bd23188ffb25a64
+local    sha256: 451fd47114fbb4c2182fe73f87962b850a3603a11a0e9df082edc996d9acea27 (26499 bytes)
+deployed sha256: 451fd47114fbb4c2182fe73f87962b850a3603a11a0e9df082edc996d9acea27 (26499 bytes)
+PARITY OK: deployed contract code is byte-for-byte identical to contracts/prediction_market.py
+verified at: 2026-09-08T00:09:12.574Z
