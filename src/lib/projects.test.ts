@@ -3,7 +3,8 @@ import { PROJECTS, getProject } from "./projects"
 
 const CM = "0x235f51b11b9f96d6673df37553ef58373c4324f9"
 const MOD = "0x2d8257E5C7343f40F7Da5380E0d26b599a6036DE"
-const PM = "0x3d17bD6d87563cB172E7C634341fBc8A14574035"
+const PM_V2 = "0x2dc09cDbb8319303eAc78E85D5d055BB53bdA6BE"
+const PM_LIFECYCLE = "0x390CAd661cEf8e2bBAc9b6a1B8A152d9083F8ba0"
 const ADDR = /^0x[0-9a-fA-F]{40}$/
 
 describe("projects config", () => {
@@ -14,10 +15,12 @@ describe("projects config", () => {
   it("defaults to latest contracts (seedContracts[0])", () => {
     expect(getProject("moderator").seedContracts[0]).toBe(MOD)
     expect(getProject("moderator").seedContracts).toContain(CM)
-    expect(getProject("prediction").seedContracts[0]).toBe(PM)
+    expect(getProject("prediction").seedContracts[0]).toBe(PM_V2)
+    expect(getProject("prediction").seedContracts).toContain(PM_LIFECYCLE)
   })
-  it("drops the stale prediction address", () => {
+  it("drops the stale prediction addresses (v1 superseded by v2)", () => {
     const all = PROJECTS.flatMap((p) => p.seedContracts)
+    expect(all).not.toContain("0x3d17bD6d87563cB172E7C634341fBc8A14574035")
     expect(all).not.toContain("0xd2Ead3C6BbaCe1D423F156762f33A2C9B406C73f")
     expect(all).not.toContain("0x72f6BE503a8319A40515641536C1d74378623914")
   })

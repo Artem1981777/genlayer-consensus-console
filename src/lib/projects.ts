@@ -6,8 +6,8 @@ export const PROJECTS: ProjectDef[] = [
     tagline: "Self-calibrating AI moderation",
     icon: "ShieldCheck",
     accent: "#b6ff6c",
-    repo: "https://github.com/Artem1981777/genlayer-content-moderator",
-    demo: "https://artem1981777.github.io/genlayer-content-moderator/",
+    repo: "https://github.com/Artem1981777/genlayer-consensus-console/tree/main/apps/content-moderator",
+    demo: "https://artem1981777.github.io/genlayer-consensus-console/",
     decisionField: "verdict",
     decisions: [
       { value: "APPROVE", label: "Approve", tone: "ok" },
@@ -30,8 +30,8 @@ export const PROJECTS: ProjectDef[] = [
     tagline: "Web-evidenced resolver + disputes",
     icon: "TrendingUp",
     accent: "#8ee63a",
-    repo: "https://github.com/Artem1981777/genlayer-prediction-market",
-    demo: "https://artem1981777.github.io/genlayer-prediction-market/",
+    repo: "https://github.com/Artem1981777/genlayer-consensus-console/tree/main/apps/prediction-market",
+    demo: "https://artem1981777.github.io/genlayer-consensus-console/",
     decisionField: "outcome",
     decisions: [
       { value: "YES", label: "Yes", tone: "ok" },
@@ -39,7 +39,8 @@ export const PROJECTS: ProjectDef[] = [
       { value: "UNRESOLVED", label: "Unresolved", tone: "muted" },
     ],
     seedContracts: [
-      "0x3d17bD6d87563cB172E7C634341fBc8A14574035",
+      "0x2dc09cDbb8319303eAc78E85D5d055BB53bdA6BE", // v2 showcase (open, live staking)
+      "0x390CAd661cEf8e2bBAc9b6a1B8A152d9083F8ba0", // v2 full lifecycle (settled, permissionless resolve/settle)
     ],
   },
   {
@@ -48,7 +49,7 @@ export const PROJECTS: ProjectDef[] = [
     tagline: "Median-consensus price feeds",
     icon: "Radio",
     accent: "#5ad1ff",
-    repo: "https://github.com/Artem1981777/genlayer-multi-source-oracle",
+    repo: "https://github.com/Artem1981777/genlayer-consensus-console/tree/main/apps/multi-source-oracle",
     demo: "https://explorer-bradbury.genlayer.com/address/0x9bEcbdF8f3Cd6fABAeE5F737CE5B1B765ef9a1F5",
     decisionField: "verdict",
     decisions: [],

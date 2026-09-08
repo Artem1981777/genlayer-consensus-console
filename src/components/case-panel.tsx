@@ -49,14 +49,27 @@ export function CasePanel({ project, tc, onRefresh }: { project: ProjectDef; tc?
           {(s.rules || s.question) ? <div className="mt"><div className="dim" style={{ fontSize: 12 }}>{project.decisionField === "verdict" ? "Rules" : "Question"}</div><div style={{ fontSize: 13.5 }}>{s.rules || s.question}</div></div> : null}
           {isMarket ? (
             <div className="mt">
-              <div className="dim" style={{ fontSize: 12 }}>Sources {frozen ? <span className="tag" style={{ marginLeft: 6 }}>frozen · config locked</span> : null}</div>
+              <div className="dim" style={{ fontSize: 12 }}>Sources {frozen ? <span className="tag" style={{ marginLeft: 6 }}>immutable from creation · 2+ domains · binding-verified</span> : null}</div>
               <div className="flex gap wrap mt8">
                 {(frozen ? frozenList : [s.source1, s.source2, s.source3].filter(Boolean)).map((u: string, i: number) => (
                   <a key={i} className="tag mono" href={u} target="_blank" rel="noreferrer" style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u} <ExternalLink size={11} /></a>
                 ))}
-                {!frozen && !(s.source1 || s.source2 || s.source3) ? <span className="dim" style={{ fontSize: 12 }}>no sources yet — the creator can add up to 3 before staking starts</span> : null}
               </div>
+              {[s.binding1, s.binding2, s.binding3].filter(Boolean).length > 0 ? (
+                <div className="mt8" style={{ fontSize: 12 }}>
+                  {[s.binding1, s.binding2, s.binding3].filter(Boolean).map((b: string, i: number) => (
+                    <div key={i} className="dim mono" title={b} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>binding {i + 1}: “{b}”</div>
+                  ))}
+                </div>
+              ) : null}
               {frozen && s.frozen_config_hash ? <div className="dim mt8 mono" style={{ fontSize: 11 }}>config hash {String(s.frozen_config_hash).slice(0, 18)}…</div> : null}
+              {Number(s.staking_deadline) > 0 || Number(s.final_deadline) > 0 ? (
+                <div className="dim mt8" style={{ fontSize: 11 }}>
+                  {Number(s.staking_deadline) > 0 ? <>staking closes {new Date(Number(s.staking_deadline) * 1000).toLocaleString()}</> : null}
+                  {Number(s.staking_deadline) > 0 && Number(s.final_deadline) > 0 ? " · " : null}
+                  {Number(s.final_deadline) > 0 ? <>permissionless final exit {new Date(Number(s.final_deadline) * 1000).toLocaleString()}</> : null}
+                </div>
+              ) : null}
             </div>
           ) : null}
           {isMarket ? <DisputeCountdown state={s} /> : null}

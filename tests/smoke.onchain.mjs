@@ -26,11 +26,13 @@ async function readState(name, address) {
 }
 
 const CM = "0x235F51b11b9F96d6673df37553Ef58373c4324F9"
-const PM = "0x3d17bD6d87563cB172E7C634341fBc8A14574035"
-const ORACLE = "0x2Ab508Bb9Be84ea4ea8388b9b8872017729a2C82"
+const PM = "0x2dc09cDbb8319303eAc78E85D5d055BB53bdA6BE" // v2 showcase (open)
+const PM_LIFECYCLE = "0x390CAd661cEf8e2bBAc9b6a1B8A152d9083F8ba0" // v2 settled lifecycle proof
+const ORACLE = "0x9bEcbdF8f3Cd6fABAeE5F737CE5B1B765ef9a1F5"
 let ok = true
 ok = (await readState("Content Moderator", CM)) && ok
-ok = (await readState("Prediction Market", PM)) && ok
+ok = (await readState("Prediction Market v2 (showcase)", PM)) && ok
+ok = (await readState("Prediction Market v2 (lifecycle)", PM_LIFECYCLE)) && ok
 ok = (await readState("Multi-Source Oracle", ORACLE)) && ok
 console.log(ok ? "SMOKE PASS" : "SMOKE FAIL")
 process.exit(ok ? 0 : 1)

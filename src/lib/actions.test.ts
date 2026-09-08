@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { ACTIONS, canDo, whyNot, visibleActions, isCreator, isAuthor, hasStake, winningStake, alreadyClaimed, alreadyRefunded, disputeRounds, disputeDeadline, disputeWindowSeconds, disputeWindowOpen, disputeWindowRemaining, frozenSources, sourcesFrozen, voidReasonLabel, canVoid } from "./actions"
+import { ACTIONS, canDo, whyNot, visibleActions, isCreator, isAuthor, hasStake, winningStake, alreadyClaimed, alreadyRefunded, disputeRounds, disputeDeadline, disputeWindowSeconds, disputeWindowOpen, disputeWindowRemaining, frozenSources, sourcesFrozen, voidReasonLabel, canVoid, stakingDeadline, finalDeadline, stakingOpen, stakingRemaining, canFinalize } from "./actions"
 const NOW = () => Math.floor(Date.now() / 1000)
 const futureDeadline = (sec = 3600) => NOW() + sec
 const pastDeadline = (sec = 3600) => NOW() - sec
@@ -12,20 +12,31 @@ const disputes = (n: number) => JSON.stringify(Array.from({ length: n }, (_, i) 
 const PM = ACTIONS.prediction
 const find = (fn: string) => PM.find((a) => a.fn === fn)!
 const cases: Array<[string, string, any, string | null, string[]]> = [
-  ["pred non-creator open", "prediction", { status: "open", creator: CREATOR }, JUDGE, ["stake"]],
-  ["pred creator open", "prediction", { status: "open", creator: CREATOR }, CREATOR, ["add_source", "resolve", "stake", "void"]],
-  ["pred creator open sources frozen", "prediction", { status: "open", creator: CREATOR, sources_frozen: true }, CREATOR, ["resolve", "stake", "void"]],
+  // ---- v2: the market lifecycle is PERMISSIONLESS (no creator-only actions),
+  // sources are immutable from creation (no add_source), stake/resolve/finalize
+  // are deadline-gated. ----
+  ["pred non-creator open", "prediction", { status: "open", creator: CREATOR }, JUDGE, ["stake", "void"]],
+  ["pred creator open (same as anyone)", "prediction", { status: "open", creator: CREATOR }, CREATOR, ["stake", "void"]],
+  ["pred open staking deadline passed without stakers", "prediction", { status: "open", creator: CREATOR, staking_deadline: pastDeadline() }, JUDGE, ["void"]],
+  ["pred open stakers + deadline passed: ANYONE may resolve", "prediction", { status: "open", creator: CREATOR, staking_started: true, staking_deadline: pastDeadline() }, JUDGE, ["resolve", "void"]],
+  ["pred open stakers + deadline future: resolve waits", "prediction", { status: "open", creator: CREATOR, staking_started: true, staking_deadline: futureDeadline() }, JUDGE, ["stake", "void"]],
+  ["pred open staking closed: stake hidden", "prediction", { status: "open", creator: CREATOR, staking_deadline: pastDeadline() }, JUDGE, ["void"]],
   ["pred dispute_window non-participant", "prediction", { status: "dispute_window", outcome: "YES", dispute_deadline: futureDeadline(), creator: CREATOR }, JUDGE, []],
   ["pred dispute_window participant", "prediction", { status: "dispute_window", outcome: "YES", dispute_deadline: futureDeadline(), creator: CREATOR, positions: posOf({ [JUDGE]: { YES: 100, NO: 0 } }) }, JUDGE, ["dispute"]],
   ["pred dispute_window dispute-limit", "prediction", { status: "dispute_window", outcome: "YES", dispute_deadline: futureDeadline(), creator: CREATOR, positions: posOf({ [JUDGE]: { YES: 100, NO: 0 } }), history: disputes(2) }, JUDGE, []],
-  ["pred dispute_window closed participant", "prediction", { status: "dispute_window", outcome: "YES", dispute_deadline: pastDeadline(), creator: CREATOR, positions: posOf({ [JUDGE]: { YES: 100, NO: 0 } }) }, JUDGE, []],
-  ["pred dispute_window closed creator settles", "prediction", { status: "dispute_window", outcome: "YES", dispute_deadline: pastDeadline(), creator: CREATOR }, CREATOR, ["settle"]],
+  ["pred dispute_window closed participant", "prediction", { status: "dispute_window", outcome: "YES", dispute_deadline: pastDeadline(), creator: CREATOR, positions: posOf({ [JUDGE]: { YES: 100, NO: 0 } }) }, JUDGE, ["settle"]],
+  ["pred dispute_window closed: ANYONE may settle", "prediction", { status: "dispute_window", outcome: "YES", dispute_deadline: pastDeadline(), creator: CREATOR }, JUDGE, ["settle"]],
   ["pred dispute_window open creator cannot settle", "prediction", { status: "dispute_window", outcome: "YES", dispute_deadline: futureDeadline(), creator: CREATOR }, CREATOR, []],
   ["pred dispute_resolved fresh window participant", "prediction", { status: "dispute_resolved", outcome: "NO", dispute_deadline: futureDeadline(), creator: CREATOR, positions: posOf({ [JUDGE]: { YES: 0, NO: 40 } }), history: disputes(1) }, JUDGE, ["dispute"]],
-  ["pred dispute_resolved closed creator", "prediction", { status: "dispute_resolved", outcome: "NO", dispute_deadline: pastDeadline(), creator: CREATOR }, CREATOR, ["settle"]],
-  ["pred disputed creator only", "prediction", { status: "disputed", outcome: "YES", creator: CREATOR }, CREATOR, ["resolve_dispute"]],
-  ["pred disputed judge", "prediction", { status: "disputed", outcome: "YES", creator: CREATOR }, JUDGE, []],
+  ["pred dispute_resolved closed anyone settles", "prediction", { status: "dispute_resolved", outcome: "NO", dispute_deadline: pastDeadline(), creator: CREATOR }, JUDGE, ["settle"]],
+  ["pred disputed: ANYONE may resolve the dispute", "prediction", { status: "disputed", outcome: "YES", creator: CREATOR }, JUDGE, ["resolve_dispute"]],
+  ["pred disputed creator", "prediction", { status: "disputed", outcome: "YES", creator: CREATOR }, CREATOR, ["resolve_dispute"]],
   ["pred dispute_window UNRESOLVED outcome cannot settle", "prediction", { status: "dispute_window", outcome: "UNRESOLVED", dispute_deadline: pastDeadline(), creator: CREATOR }, CREATOR, ["void"]],
+  // ---- finalize: the permissionless hard-deadline exit ----
+  ["pred open before final deadline: finalize hidden", "prediction", { status: "open", creator: CREATOR, final_deadline: futureDeadline() }, JUDGE, ["stake", "void"]],
+  ["pred open after final deadline: ANYONE may finalize", "prediction", { status: "open", creator: CREATOR, staking_deadline: pastDeadline(), final_deadline: pastDeadline() }, JUDGE, ["finalize", "void"]],
+  ["pred dispute_window after final deadline: settle + finalize", "prediction", { status: "dispute_window", outcome: "YES", dispute_deadline: pastDeadline(), final_deadline: pastDeadline(), creator: CREATOR }, JUDGE, ["finalize", "settle"]],
+  ["pred settled after final deadline: finalize hidden", "prediction", { status: "settled", creator: CREATOR, winning_side: "YES", final_deadline: pastDeadline() }, JUDGE, []],
   ["pred settled winner unclaimed", "prediction", { status: "settled", creator: CREATOR, winning_side: "YES", positions: posOf({ [JUDGE]: { YES: 100, NO: 0 } }) }, JUDGE, ["claim"]],
   ["pred settled winner claimed", "prediction", { status: "settled", creator: CREATOR, winning_side: "YES", positions: posOf({ [JUDGE]: { YES: 100, NO: 0 } }), claims: posOf({ [JUDGE]: { claimed: true } }) }, JUDGE, []],
   ["pred settled loser", "prediction", { status: "settled", creator: CREATOR, winning_side: "YES", positions: posOf({ [JUDGE]: { YES: 0, NO: 100 } }) }, JUDGE, []],
@@ -60,9 +71,12 @@ describe("precise whyNot reasons for per-caller gating", () => {
   it("settle while window open", () => { expect(whyNot(find("settle"), { status: "dispute_window", outcome: "YES", dispute_deadline: futureDeadline(), creator: CREATOR }, CREATOR)).toBe("Dispute window is still open; settlement unlocks after the deadline") })
   it("refund nothing", () => { expect(whyNot(find("refund"), { status: "voided" }, JUDGE)).toBe("Nothing to refund") })
   it("void definite outcome", () => { expect(whyNot(find("void"), { status: "open", creator: CREATOR, outcome: "YES" }, CREATOR)).toBe("Cannot void a market with a definite YES/NO outcome; settle it instead") })
-  it("add_source frozen", () => { expect(whyNot(find("add_source"), { status: "open", creator: CREATOR, sources_frozen: true }, CREATOR)).toBe("Sources are frozen: staking has started, the source set is locked") })
+  it("resolve needs stakers", () => { expect(whyNot(find("resolve"), { status: "open", creator: CREATOR }, JUDGE)).toBe("Nobody has staked this market yet") })
+  it("resolve waits for staking deadline", () => { expect(whyNot(find("resolve"), { status: "open", creator: CREATOR, staking_started: true, staking_deadline: futureDeadline() }, JUDGE)).toBe("Resolution opens after the staking deadline") })
+  it("stake closed after deadline", () => { expect(whyNot(find("stake"), { status: "open", creator: CREATOR, staking_deadline: pastDeadline() }, JUDGE)).toBe("Staking deadline has passed; the market is closed for trading") })
+  it("finalize before final deadline", () => { expect(whyNot(find("finalize"), { status: "open", creator: CREATOR, final_deadline: futureDeadline() }, JUDGE)).toBe("Final deadline has not passed yet") })
   it("wrong-phase message", () => { expect(whyNot(find("claim"), { status: "open", creator: CREATOR }, JUDGE)).toBe("Not available in the current phase") })
-  it("creator-only message", () => { expect(whyNot(find("resolve"), { status: "open", creator: CREATOR }, JUDGE)).toBe("Only the market creator can do this") })
+  it("creator-only message (moderator enforce)", () => { expect(whyNot(ACTIONS.moderator.find((a) => a.fn === "enforce")!, { status: "moderated", creator: CREATOR }, JUDGE)).toBe("Only the market creator can do this") })
 })
 describe("dispute-window helpers", () => {
   it("deadline + window seconds parsing", () => {
@@ -86,6 +100,35 @@ describe("dispute-window helpers", () => {
     expect(disputeWindowRemaining({ status: "dispute_window", dispute_deadline: now - 90 }, now)).toBe(0)
   })
 })
+describe("market deadline helpers (v2 staking/final)", () => {
+  it("stakingDeadline / finalDeadline parsing", () => {
+    expect(stakingDeadline({ staking_deadline: 1750000000 })).toBe(1750000000)
+    expect(stakingDeadline({})).toBe(0)
+    expect(finalDeadline({ final_deadline: 1750000900 })).toBe(1750000900)
+    expect(finalDeadline({})).toBe(0)
+  })
+  it("stakingOpen: default open when no deadline recorded (legacy markets)", () => {
+    const now = NOW()
+    expect(stakingOpen({ status: "open" }, now)).toBe(true)
+    expect(stakingOpen({ status: "open", staking_deadline: now + 60 }, now)).toBe(true)
+    expect(stakingOpen({ status: "open", staking_deadline: now - 60 }, now)).toBe(false)
+    expect(stakingOpen({ status: "dispute_window", staking_deadline: now + 60 }, now)).toBe(false)
+  })
+  it("stakingRemaining bounded", () => {
+    const now = NOW()
+    expect(stakingRemaining({ status: "open", staking_deadline: now + 45 }, now)).toBe(45)
+    expect(stakingRemaining({ status: "open", staking_deadline: now - 45 }, now)).toBe(0)
+  })
+  it("canFinalize only after the final deadline and before terminal states", () => {
+    const now = NOW()
+    expect(canFinalize({ status: "open", final_deadline: now - 1 }, now)).toBe(true)
+    expect(canFinalize({ status: "disputed", final_deadline: now - 1 }, now)).toBe(true)
+    expect(canFinalize({ status: "open", final_deadline: now + 1 }, now)).toBe(false)
+    expect(canFinalize({ status: "open" }, now)).toBe(false)
+    expect(canFinalize({ status: "settled", final_deadline: now - 1 }, now)).toBe(false)
+    expect(canFinalize({ status: "voided", final_deadline: now - 1 }, now)).toBe(false)
+  })
+})
 describe("freeze + void helpers", () => {
   it("frozenSources parses JSON array of strings", () => {
     expect(frozenSources({ frozen_sources: JSON.stringify(["https://a.example", "https://b.example"]) })).toEqual(["https://a.example", "https://b.example"])
@@ -97,9 +140,11 @@ describe("freeze + void helpers", () => {
     expect(sourcesFrozen({ sources_frozen: "true" })).toBe(false)
     expect(sourcesFrozen({})).toBe(false)
   })
-  it("voidReasonLabel maps on-chain reasons", () => {
+  it("voidReasonLabel maps on-chain reasons (v1 + v2)", () => {
     expect(voidReasonLabel({ status: "voided", void_reason: "winning_side_empty" })).toMatch(/nobody backed the winning side/i)
     expect(voidReasonLabel({ status: "voided", void_reason: "creator_void" })).toMatch(/voided by the creator/i)
+    expect(voidReasonLabel({ status: "voided", void_reason: "deadline_void" })).toMatch(/permissionless final deadline/i)
+    expect(voidReasonLabel({ status: "voided", void_reason: "permissionless_void" })).toMatch(/permissionless/i)
     expect(voidReasonLabel({ status: "voided" })).toMatch(/voided, refunds are open/i)
     expect(voidReasonLabel({ status: "settled" })).toBe("")
   })
@@ -116,6 +161,11 @@ describe("identity + helpers", () => {
   it("stake/winning/claimed/disputeRounds helpers", () => {
     const st = { winning_side: "NO", positions: posOf({ [JUDGE]: { YES: 0, NO: 30 } }), claims: posOf({ [JUDGE]: { claimed: true } }), history: disputes(1) }
     expect(hasStake(st, JUDGE)).toBe(true); expect(winningStake(st, JUDGE)).toBe(30); expect(alreadyClaimed(st, JUDGE)).toBe(true); expect(disputeRounds(st)).toBe(1)
+  })
+  it("canDo composition", () => {
+    const a = find("stake")
+    expect(canDo(a, { status: "open" }, JUDGE)).toBe(true)
+    expect(canDo(a, { status: "settled" }, JUDGE)).toBe(false)
   })
 })
 

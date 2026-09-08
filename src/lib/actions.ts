@@ -51,9 +51,31 @@ export const disputeWindowRemaining = (st: any, nowSec?: number): number => {
 }
 export const frozenSources = (st: any): string[] => { if (!st) return []; try { const v = typeof st.frozen_sources === "string" ? JSON.parse(st.frozen_sources) : st.frozen_sources; return Array.isArray(v) ? v.filter((u: any) => typeof u === "string") : [] } catch { return [] } }
 export const sourcesFrozen = (st: any) => !!(st && st.sources_frozen === true)
+// market deadlines (v2): staking closes trading; final is the permissionless hard exit
+export const stakingDeadline = (st: any): number => { const n = Number(st && st.staking_deadline); return Number.isFinite(n) ? n : 0 }
+export const finalDeadline = (st: any): number => { const n = Number(st && st.final_deadline); return Number.isFinite(n) ? n : 0 }
+export const stakingOpen = (st: any, nowSec?: number): boolean => {
+  if (!st || st.status !== "open") return false
+  const dl = stakingDeadline(st)
+  if (dl <= 0) return true
+  return (nowSec ?? Math.floor(Date.now() / 1000)) < dl
+}
+export const stakingRemaining = (st: any, nowSec?: number): number => {
+  if (!stakingOpen(st, nowSec)) return 0
+  return Math.max(0, stakingDeadline(st) - (nowSec ?? Math.floor(Date.now() / 1000)))
+}
+export const canFinalize = (st: any, nowSec?: number): boolean => {
+  if (!st) return false
+  if (st.status === "settled" || st.status === "voided") return false
+  const dl = finalDeadline(st)
+  if (dl <= 0) return false
+  return (nowSec ?? Math.floor(Date.now() / 1000)) >= dl
+}
 export const voidReasonLabel = (st: any): string => {
   if (!st || st.status !== "voided") return ""
   if (st.void_reason === "winning_side_empty") return "Voided automatically: nobody backed the winning side, refunds are open"
+  if (st.void_reason === "deadline_void") return "Voided by the permissionless final deadline: refunds are open 1:1"
+  if (st.void_reason === "permissionless_void") return "Voided (permissionless, unresolved market): refunds are open"
   if (st.void_reason === "creator_void") return "Voided by the creator, refunds are open"
   return "Voided, refunds are open"
 }
@@ -69,13 +91,16 @@ export const whyNot = (a: ActionDef, st: any, acct?: string | null): string =>
   : ""
 export const ACTIONS: Record<string, ActionDef[]> = {
   prediction: [
-    { fn: "stake", label: "Stake", tone: "ok", fields: [ { key: "side", label: "Side", type: "select", options: ["YES", "NO"] }, { key: "amount", label: "Amount (wei)", type: "number", placeholder: "100" } ], build: (v) => [v.side || "YES"], value: (v) => { const w = parseStakeWei(v.amount); if (w === null) throw new Error("Enter a whole, strictly positive wei amount before staking"); return w }, validate: (v) => (v.side !== "YES" && v.side !== "NO") ? "Choose a side (YES or NO)" : parseStakeWei(v.amount) === null ? "Enter a whole, strictly positive wei amount (no zero, negative or fractional values)" : null, phase: (st) => st && st.status === "open" },
-    { fn: "add_source", label: "Add source", fields: [ { key: "url", label: "Source URL", type: "text", placeholder: "https://example.com/market-source" } ], build: (v) => [v.url || ""], validate: (v) => (v.url && /^https?:\/\//.test(v.url.trim())) ? null : "Enter an http(s) source URL", role: "creator", phase: (st) => st && st.status === "open", enabled: (st) => !sourcesFrozen(st), why: () => "Sources are frozen: staking has started, the source set is locked" },
-    { fn: "resolve", label: "Resolve", role: "creator", phase: (st) => st && st.status === "open" },
-    { fn: "void", label: "Void", tone: "warn", role: "creator", phase: (st) => st && (st.status === "open" || st.status === "dispute_window" || st.status === "dispute_resolved"), enabled: (st) => canVoid(st), why: () => "Cannot void a market with a definite YES/NO outcome; settle it instead" },
+    { fn: "stake", label: "Stake", tone: "ok", fields: [ { key: "side", label: "Side", type: "select", options: ["YES", "NO"] }, { key: "amount", label: "Amount (wei)", type: "number", placeholder: "100" } ], build: (v) => [v.side || "YES"], value: (v) => { const w = parseStakeWei(v.amount); if (w === null) throw new Error("Enter a whole, strictly positive wei amount before staking"); return w }, validate: (v) => (v.side !== "YES" && v.side !== "NO") ? "Choose a side (YES or NO)" : parseStakeWei(v.amount) === null ? "Enter a whole, strictly positive wei amount (no zero, negative or fractional values)" : null, phase: (st) => st && st.status === "open", enabled: (st) => stakingOpen(st), why: (st) => stakingDeadline(st) > 0 ? "Staking deadline has passed; the market is closed for trading" : "Staking is closed" },
+    // v2: the market lifecycle is PERMISSIONLESS — resolve, resolve_dispute,
+    // settle, void and finalize no longer require the creator. Sources are
+    // immutable from creation, so add_source is gone entirely.
+    { fn: "resolve", label: "Resolve", phase: (st) => st && st.status === "open", enabled: (st) => stakingDeadline(st) > 0 ? !stakingOpen(st) && !!(st.staking_started) : !!(st.staking_started), why: (st) => !st.staking_started ? "Nobody has staked this market yet" : stakingOpen(st) ? "Resolution opens after the staking deadline" : null },
+    { fn: "void", label: "Void", tone: "warn", phase: (st) => st && (st.status === "open" || st.status === "dispute_window" || st.status === "dispute_resolved"), enabled: (st) => canVoid(st), why: () => "Cannot void a market with a definite YES/NO outcome; settle it instead" },
     { fn: "dispute", label: "Dispute", tone: "warn", fields: [ { key: "reason", label: "Reason", type: "text", placeholder: "Requesting re-review of the cited sources" } ], build: (v) => [v.reason || ""], phase: (st) => st && (st.status === "dispute_window" || st.status === "dispute_resolved"), validate: (v) => (v && v.reason && v.reason.trim().length > 0) ? null : "Enter a reason to dispute", enabled: (st, acct) => disputeWindowOpen(st) && hasStake(st, acct) && disputeRounds(st) < 2, why: (st, acct) => !disputeWindowOpen(st) ? "Dispute window has closed; the resolved outcome is final" : !hasStake(st, acct) ? "Only a participant who staked this market can dispute" : disputeRounds(st) >= 2 ? "Dispute limit reached (max 2) for this market" : null },
-    { fn: "resolve_dispute", label: "Resolve dispute", role: "creator", phase: (st) => st && st.status === "disputed" },
-    { fn: "settle", label: "Settle", role: "creator", phase: (st) => st && (st.status === "dispute_window" || st.status === "dispute_resolved") && (st.outcome === "YES" || st.outcome === "NO"), enabled: (st) => !disputeWindowOpen(st), why: (st) => disputeWindowOpen(st) ? "Dispute window is still open; settlement unlocks after the deadline" : null },
+    { fn: "resolve_dispute", label: "Resolve dispute", phase: (st) => st && st.status === "disputed" },
+    { fn: "settle", label: "Settle", phase: (st) => st && (st.status === "dispute_window" || st.status === "dispute_resolved") && (st.outcome === "YES" || st.outcome === "NO"), enabled: (st) => !disputeWindowOpen(st), why: (st) => disputeWindowOpen(st) ? "Dispute window is still open; settlement unlocks after the deadline" : null },
+    { fn: "finalize", label: "Finalize (deadline exit)", tone: "warn", phase: (st) => st && (st.status === "open" || st.status === "dispute_window" || st.status === "dispute_resolved" || st.status === "disputed"), enabled: (st) => canFinalize(st), why: (st) => canFinalize(st) ? null : "Final deadline has not passed yet" },
     { fn: "claim", label: "Claim", tone: "ok", phase: (st) => st && st.status === "settled", enabled: (st, acct) => winningStake(st, acct) > 0 && !alreadyClaimed(st, acct), why: (st, acct) => winningStake(st, acct) <= 0 ? "No winning stake to claim" : alreadyClaimed(st, acct) ? "Already claimed" : null },
     { fn: "refund", label: "Refund", tone: "ok", phase: (st) => st && st.status === "voided", enabled: (st, acct) => hasStake(st, acct) && !alreadyRefunded(st, acct), why: (st, acct) => !hasStake(st, acct) ? "Nothing to refund" : alreadyRefunded(st, acct) ? "Already refunded" : null },
   ],
