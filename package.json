@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "deploy": "npm run build && npx --yes gh-pages -d out -b gh-pages --dotfiles",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run"
