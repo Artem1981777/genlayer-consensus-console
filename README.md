@@ -2,8 +2,16 @@
 
 Interactive multi-contract dApp on GenLayer Testnet Bradbury: a thin browser client that submits real inputs to three deployed Intelligent Contracts (content moderation, prediction market, multi-source price oracle) and reads their on-chain state. Every consensus-critical decision — moderation verdicts, market outcomes, oracle medians — is computed and stored on-chain by the contracts; the frontend never decides anything.
 
-**Live app:** <https://artem1981777.github.io/genlayer-consensus-console/>
-**Source:** <https://github.com/Artem1981777/genlayer-consensus-console>
+## Open the site
+
+### [Launch GenLayer Consensus Console →](https://artem1981777.github.io/genlayer-consensus-console/)
+
+The public live site is deployed on GitHub Pages and connects directly to GenLayer Testnet Bradbury. Connect an EIP-6963 wallet to inspect the seeded contracts, add a case, and submit real contract actions. The site includes the Overview dashboard, Analytics, and the AI Escrow Arbiter experience.
+
+- **Live dApp:** <https://artem1981777.github.io/genlayer-consensus-console/>
+- **Source repository:** <https://github.com/Artem1981777/genlayer-consensus-console>
+- **Network:** GenLayer Testnet Bradbury · chain `4221`
+- **Deployment:** GitHub Pages from the `gh-pages` branch
 
 **Status (v2.0.0):** 91/91 unit tests · `tsc --noEmit` clean · `next build` green · live smoke reads of all three deployed contracts. Steward-review evidence: [`docs/EVIDENCE.md`](docs/EVIDENCE.md) · [`docs/REVIEW-RESPONSE.md`](docs/REVIEW-RESPONSE.md).
 

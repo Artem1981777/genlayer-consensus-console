@@ -10,7 +10,8 @@ import { StatusDot } from "@/components/status-dot"
 import { AddContract } from "@/components/add-contract"
 import { OracleOverview } from "@/components/oracle-overview"
 import { short } from "@/lib/format"
-import { Activity, ShieldAlert, Gauge, ListChecks, RefreshCw } from "lucide-react"
+import { Activity, ShieldAlert, Gauge, ListChecks, RefreshCw, ArrowUpRight, ArrowRight, ShieldCheck, TrendingUp, Radio } from "lucide-react"
+const LIVE_URL = "https://artem1981777.github.io/genlayer-consensus-console/"
 export default function Overview() {
   const { projectId } = useApp()
   const project = getProject(projectId)
@@ -33,6 +34,23 @@ export default function Overview() {
   const primary = project.decisions[0]?.value
   return (
     <>
+      <section className="hero card">
+        <div className="hero-copy">
+          <div className="eyebrow"><span className="dot" /> LIVE ON BRADBURY · GENLAYER TESTNET</div>
+          <h2>Consensus for decisions<br /><span>that code cannot make alone.</span></h2>
+          <p>GenLayer Consensus Console is a production-style control room for Intelligent Contracts that reason over policy, evidence and live data — with every accepted decision recorded on-chain.</p>
+          <div className="flex gap wrap hero-actions">
+            <a className="btn primary" href={LIVE_URL} target="_blank" rel="noreferrer">Open live dApp <ArrowUpRight size={15} /></a>
+            <a className="btn" href="https://github.com/Artem1981777/genlayer-consensus-console" target="_blank" rel="noreferrer">Explore source <ArrowRight size={15} /></a>
+          </div>
+        </div>
+        <div className="hero-orb" aria-hidden="true"><div className="orb-ring ring-one" /><div className="orb-ring ring-two" /><div className="orb-core">GL<span>CONSENSUS</span></div></div>
+      </section>
+      <section className="product-strip" aria-label="Product capabilities">
+        <div><ShieldCheck size={18} /><span><b>Content moderation</b><small>Policy-aware verdicts</small></span></div>
+        <div><TrendingUp size={18} /><span><b>Prediction markets</b><small>Evidence-bound outcomes</small></span></div>
+        <div><Radio size={18} /><span><b>Multi-source oracle</b><small>Median-consensus pricing</small></span></div>
+      </section>
       <div className="topbar">
         <div>
           <h1 className="h1"><StatusDot tone={online ? "ok" : "bad"} /> {project.name}</h1>
