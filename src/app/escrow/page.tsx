@@ -86,6 +86,7 @@ export default function EscrowPage() {
           if (i > 1) setNote({ ok: true, text: label + ": AI consensus is flaky on testnet — retrying (attempt " + i + "/" + maxTries + ")…" })
           const r = await sendWriteEx(writeClient, active, fn, args, value, (h) => setPending(h))
           setNote(r.confirmed ? { ok: true, text: label + " confirmed (" + r.result + ")", hash: r.hash } : { ok: true, text: label + " submitted, finalizing on-chain (" + r.result + "). Verify on Explorer.", hash: r.hash })
+          if (r.confirmed) await refresh(active)
           lastErr = null
           break
         } catch (e) {
@@ -101,10 +102,7 @@ export default function EscrowPage() {
       const msg = String((e as { message?: string })?.message ?? e)
       const friendly = /revert|consensus|undeterm|appeal/i.test(msg) ? ("AI consensus reverted — this is a transient GenLayer testnet hiccup, not a bug. Just click " + label + " again to retry (funds stay safe in the contract).") : msg
       setNote({ ok: false, text: friendly, hash: pending || undefined })
-    } finally {
-      setBusy(""); setPending("")
-      try { await refresh(active) } catch {}
-    }
+    } finally { setBusy(""); setPending("") }
   }, [writeClient, active, refresh, pending])
 
   const doCreate = useCallback(async () => {

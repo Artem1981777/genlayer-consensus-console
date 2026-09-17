@@ -48,18 +48,17 @@ export function ActionsPanel({ projectId, address, onDone, state }: { projectId:
         sentHash = h; setLastHash(h); setPhase("submitted")
         relBusy(a.fn); addPending(a.fn); setTimeout(() => delPending(a.fn), 8000); setOpenFn(null); setForm({})
         toast.success(a.label + " submitted on-chain", { id: tid, description: "Tx " + short(h, 8) + (slow ? " \u2014 AI consensus in progress, ~1\u20132 min. The verdict appears automatically." : " \u2014 finalizing via consensus. The dashboard updates automatically."), action: explorerTx(h) })
-        // Bounded re-poll: AI actions need ~2.5 min, deterministic ones ~30s.
-        softRefresh(slow ? 30 : 12, slow ? 5000 : 2500)
       })
       if (res.confirmed) {
         setLastHash(res.hash); setPhase("confirmed")
         toast.success(a.label + " confirmed on GenLayer", { id: tid, description: short(res.hash, 8), action: explorerTx(res.hash) })
+        // Refresh only after ACCEPTED receipt and a successful execution result.
+        await softRefresh(slow ? 6 : 3, slow ? 5000 : 3000)
       } else {
         if (!sentHash) setLastHash(res.hash)
         setPhase("submitted")
         toast.message(a.label + (slow ? " submitted - AI consensus in progress" : " submitted - finalizing on-chain"), { id: tid, description: "Tx " + short(res.hash, 8) + " is on-chain. The dashboard updates automatically" + (slow ? " once moderation completes (~1\u20132 min)." : "."), action: explorerTx(res.hash) })
       }
-      await softRefresh(slow ? 6 : 3, slow ? 5000 : 3000)
     } catch (e: any) {
       const msg = String(e && e.message ? e.message : e)
       const execError = /execution not successful/i.test(msg)
@@ -70,16 +69,14 @@ export function ActionsPanel({ projectId, address, onDone, state }: { projectId:
       } else if (sentHash) {
         setPhase("submitted"); setOpenFn(null); setForm({})
         toast.message(a.label + " submitted - finalizing on-chain", { id: tid, description: "Tx " + short(sentHash, 8) + " is on-chain. Verify on Explorer; the dashboard updates automatically.", action: explorerTx(sentHash as string) })
-        await softRefresh(slow ? 12 : 6, slow ? 5000 : 3000)
       } else if (ambiguous) {
         setPhase("submitted"); setOpenFn(null); setForm({})
         toast.message(a.label + " submitted - finalizing on-chain", { id: tid, description: "Submitted on-chain. Verify on the contract Explorer; the dashboard updates automatically.", action: explorerAddr })
-        await softRefresh(slow ? 12 : 6, slow ? 5000 : 3000)
       } else {
         setPhase("error")
         toast.error(a.label + " failed", { id: tid, description: msg.slice(0, 140) })
       }
-    } finally { relBusy(a.fn); delPending(a.fn); try { if (onDone) onDone() } catch {} }
+    } finally { relBusy(a.fn); delPending(a.fn) }
   }
   function click(a: ActionDef) {
     if (a.fields && a.fields.length) { setOpenFn(openFn === a.fn ? null : a.fn); return }
